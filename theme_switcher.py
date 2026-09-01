@@ -30,7 +30,8 @@ set_parser.add_argument("theme")
 args = parser.parse_args()
 
 if args.command == "list":
-    print("list initiated")
+    themes_list = os.listdir(themes_dir)
+    print("Available themes:", " ".join(themes_list))
 
 if args.command == "set":
     selected_theme = args.theme
