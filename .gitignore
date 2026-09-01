@@ -1,0 +1,5 @@
+# personal themes ignored. example theme left to show correct theme structure
+
+/themes/*
+!/themes/example/
+!/themes/example/example.json
