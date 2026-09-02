@@ -3,13 +3,56 @@ import json
 import subprocess
 import shutil
 import os
+import configparser
 from pathlib import Path
 
 img_extensions = (".jpg", ".jpeg", ".png", ".webp")
 
-themes_dir = Path(__file__).resolve().parent / "themes/" 
+base_dir = Path(__file__).resolve().parent
 
-current_path = Path(__file__).resolve().parent / "current.json"
+themes_dir = base_dir / "themes/" 
+
+current_path = base_dir / "current.json"
+
+config_file = base_dir / "config.cfg"
+
+config = configparser.ConfigParser()
+
+def get_paths(selected_theme):
+    
+    scheme_path = themes_dir / selected_theme / f"{selected_theme}.json"
+
+    theme_files = os.listdir(themes_dir / selected_theme)
+
+    for file in theme_files:
+        if file.endswith(img_extensions):
+            selected_wallpaper = file
+            break
+
+    wall_path = themes_dir / selected_theme / selected_wallpaper
+    
+    return scheme_path, wall_path
+
+def set_themes():
+
+    subprocess.run([
+        "hyprctl",
+        "hyprpaper",
+        "wallpaper",
+        f",{wall_path}"
+    ])
+
+    shutil.copyfile(scheme_path, current_path)
+
+    subprocess.run([
+        "qs",
+        "ipc",
+        "call",
+        "shell",
+        "reload",
+    ])
+
+
 
 
 parser = argparse.ArgumentParser()
@@ -27,6 +70,11 @@ set_parser = subparsers.add_parser(
 )
 set_parser.add_argument("theme")
 
+subparsers.add_parser(
+    "apply",
+    help="Applies current theme. Intended to be used for autostart."
+)
+
 args = parser.parse_args()
 
 if args.command == "list":
@@ -35,33 +83,22 @@ if args.command == "list":
 
 if args.command == "set":
     selected_theme = args.theme
-    scheme_path = themes_dir / selected_theme / f"{selected_theme}.json"
-
-    theme_files = os.listdir(themes_dir / selected_theme)
-
-    for file in theme_files:
-        if file.endswith(img_extensions):
-            selected_wallpaper = file
-
-    wall_path = themes_dir / selected_theme / selected_wallpaper
+    scheme_path, wall_path = get_paths(selected_theme)
     
-    subprocess.run([
-        "hyprctl",
-        "hyprpaper",
-        "wallpaper",
-        f",{wall_path}"
-    ])
+    config.read(config_file)
+    config.set("current", "theme", selected_theme)
 
-    print(f"Wallpaper set to {selected_theme}!")
+    with open(config_file, "w") as f:
+        config.write(f)
+        
+    set_themes()
 
-    shutil.copyfile(scheme_path, current_path)
 
-    subprocess.run([
-        "qs",
-        "ipc",
-        "call",
-        "shell",
-        "reload",
-    ])
+if args.command == "apply":
+    config.read(config_file)
+    selected_theme = config["current"]["theme"]
+    scheme_path, wall_path = get_paths(selected_theme)
+    set_themes()
 
-    print(f"Colours set to {selected_theme}")
+
+
