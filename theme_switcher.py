@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import os
 import configparser
+import time
 from pathlib import Path
 
 img_extensions = (".jpg", ".jpeg", ".png", ".webp")
@@ -17,6 +18,9 @@ current_path = base_dir / "current.json"
 config_file = base_dir / "config.cfg"
 
 config = configparser.ConfigParser()
+
+config.read(config_file)
+wallhandler = config["settings"]["wallhandler"]
 
 def get_paths(selected_theme):
     
@@ -35,11 +39,22 @@ def get_paths(selected_theme):
 
 def set_themes():
 
-    subprocess.run([
-        "hyprctl",
-        "hyprpaper",
-        "wallpaper",
-        f",{wall_path}"
+    if wallhandler == "awww":
+        subprocess.run([
+            "awww",
+            "img",
+            "-t",
+            "wipe",
+            "--transition-fps",
+            "60",
+            f"{wall_path}"
+        ])
+    elif wallhandler == "hyprpaper":
+        subprocess.run([
+            "hyprctl",
+            "hyprpaper",
+            "wallpaper",
+            f",{wall_path}"
     ])
 
     shutil.copyfile(scheme_path, current_path)
@@ -98,6 +113,14 @@ if args.command == "apply":
     config.read(config_file)
     selected_theme = config["current"]["theme"]
     scheme_path, wall_path = get_paths(selected_theme)
+
+    if wallhandler == "awww":
+        subprocess.Popen("awww-daemon")
+    elif wallhandler == "hyprpaper":
+        subprocess.run("hyprpaper")
+    else:
+        print(f"Invalid/unsupported wallpaper handler. ({wallhandler})")
+
     set_themes()
 
 
